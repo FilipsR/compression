@@ -4,7 +4,7 @@ public class Main {
 		System.out.println("Main.main()");
 		LZ77 lz77 = new LZ77();
 		ArithmeticCoder arithmetic = new ArithmeticCoder();
-		BitInput input = new BitInput();
+		BitInput input = new BitInput(System.in);
 		BitOutput output = new BitOutput(System.out);
 
 		lz77.compress(System.in, output);
@@ -14,17 +14,28 @@ public class Main {
 	}
 }
 
-class BitInput {
+class BitInput implements AutoCloseable {
+	BitInput(InputStream stream) {
+	}
+
 	int readBit() {
 		System.out.println("BitInput.readBit");
 		return -1;
 	}
+
+	@Override
+	public void close() {}
 }
 
 class BitOutput implements AutoCloseable {
 	private int bits;
 	private int bitCount = 0;
 	private final OutputStream stream;
+
+	BitOutput(OutputStream stream) {
+		this.stream = stream;
+	}
+
 	void writeBit(int bit) throws IOException {
 		assert 0 <= bitCount && bitCount <= 8 : "bit count out of range";
 		assert bit == 0 || bit == 1 : "bit must be 0 or 1";
@@ -36,14 +47,11 @@ class BitOutput implements AutoCloseable {
 		bitCount++;
 	}
 
+	@Override
 	public void close() throws IOException {
 		if(bitCount != 0)
 			stream.write(bits);
 		stream.close();
-	}
-
-	BitOutput(OutputStream stream) {
-		this.stream = stream;
 	}
 }
 
