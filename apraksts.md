@@ -1,11 +1,8 @@
 # LZ77
 
-Izvads satur ascii simbolus un pārus {*garums*, *distance*}.
+Minimālais garums - 2 baiti.
 
-Vienkāršības labad, katru elementu aprakstam ar vismaz 2 baitiem:
-* 1 baits *garums*
-* 2 baiti *distance*, ja *garums* nav nulle
-* 1 baits - ascii simbols, ja *garums* ir nulle
+Izvads satur ascii simbolus un pārus {*distance*, *garums*}.
 
 # Arithmetic Coding
 
