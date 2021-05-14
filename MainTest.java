@@ -70,5 +70,35 @@ public class MainTest {
 		assertEquals(4, t.get(0));
 		assertEquals(1234, t.numberOfSymbols());
 		assertEquals(4, t.frequencySumBelow(123));
+		assertEquals(4, t.frequencySumBelow(1));
+
+		t.set(0, 5);
+		assertEquals(5, t.get(0));
+		assertEquals(1234, t.numberOfSymbols());
+		assertEquals(5, t.frequencySumBelow(1));
+		assertEquals(0, t.frequencySumBelow(0));
+
+		t.set(1, 5);
+		assertEquals(5, t.get(0));
+		assertEquals(5, t.get(1));
+		assertEquals(0, t.get(2));
+		assertEquals(0, t.frequencySumBelow(0));
+		assertEquals(5, t.frequencySumBelow(1));
+		assertEquals(10, t.frequencySumBelow(2));
+		assertEquals(10, t.frequencySumBelow(3));
+
+		t.set(1233, 5);
+		assertEquals(5, t.get(1233));
+		assertEquals(10, t.frequencySumBelow(1233));
+		assertEquals(10, t.frequencySumBelow(2));
+		assertEquals(15, t.frequencySumBelow(1234));
+
+		t.add(1233, 5);
+		assertEquals(10, t.frequencySumBelow(1233));
+		assertEquals(20, t.frequencySumBelow(1234));
+
+		t.add(0, 5);
+		assertEquals(15, t.frequencySumBelow(1233));
+		assertEquals(25, t.frequencySumBelow(1234));
 	}
 }

@@ -74,7 +74,7 @@ class FrequencyTable {
 		for(; to > from; to -= Integer.lowestOneBit(to))
 			sum += tree[to - 1];
 		for(; from > to; from -= Integer.lowestOneBit(from))
-			sum += tree[from - 1];
+			sum -= tree[from - 1];
 		return sum;
 	}
 	void add(int symbol, int delta) {
@@ -87,23 +87,16 @@ class FrequencyTable {
 		return rangeSum(symbol, symbol + 1);
 	}
 	void set(int symbol, int frequency) {
-		System.out.println("FrequencyTable.set("+symbol+", "+frequency+")");
 		add(symbol, frequency - get(symbol));
-	}
-	void increment(int symbol, int amount) {
-		assert symbol >= 0;
-		for(; symbol < tree.length - 1; symbol += Integer.lowestOneBit(symbol))
-			tree[symbol] += amount;
 	}
 	int numberOfSymbols() {
 		return tree.length;
 	}
 	int frequencySumBelow(int symbol) {
-		System.out.println("FrequencyTable.frequencySumBelow("+symbol+")");
 		int sum = 0;
 		assert 0 <= symbol && symbol <= tree.length;
-		for (; symbol > 0; symbol -= Integer.lowestOneBit(symbol));
-			sum += tree[symbol + 1];
+		for (; symbol > 0; symbol -= Integer.lowestOneBit(symbol))
+			sum += tree[symbol - 1];
 		return sum;
 	}
 }
