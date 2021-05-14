@@ -106,7 +106,7 @@ class FrequencyTable {
 			sum += tree[symbol_1 -1];
 		for (; symbol > symbol_1; symbol -= Integer.lowestOneBit(symbol))
 			sum -= tree[symbol -1];
-		return -1;
+		return sum;
 	}
 }
 
