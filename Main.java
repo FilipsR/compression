@@ -66,7 +66,7 @@ class FrequencyTable {
 	// https://en.wikipedia.org/wiki/Fenwick_tree
 	private final int[] tree;
 	FrequencyTable(int symbolCount) {
-		tree = new int[symbolCount + 1];
+		tree = new int[symbolCount];
 	}
 	private int rangeSum(int from, int to) {
 		assert 0 <= from && from <= to;
@@ -90,7 +90,7 @@ class FrequencyTable {
 			tree[symbol] += amount;
 	}
 	int numberOfSymbols() {
-		return tree.length - 1;
+		return tree.length;
 	}
 	int frequencySumBelow(int symbol) {
 		System.out.println("FrequencyTable.frequencySumBelow("+symbol+")");

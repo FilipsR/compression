@@ -61,7 +61,9 @@ public class MainTest {
 	public void testFrequencyTable() {
 		FrequencyTable t = new FrequencyTable(1234);
 		assertEquals(1234, t.numberOfSymbols());
+		assertEquals(0, t.get(0));
 		assertEquals(0, t.get(456));
+		assertEquals(0, t.get(1233));
 		assertEquals(0, t.frequencySumBelow(123));
 
 		t.set(0, 4);
