@@ -60,10 +60,10 @@ class ArithmeticCoder {
 		System.out.println("ArithmeticCoder.compress("+input+", "+output+")");
 		input.readBit();
 		output.writeBit(0);
-		FrequencyTable frequencyTable = new FrequencyTable();
+		FrequencyTable frequencyTable = new FrequencyTable(0);
 		frequencyTable.get(-1);
 		frequencyTable.set(-1, -1);
-		frequencyTable.increment(-1);
+		frequencyTable.increment(-1, -1);
 		frequencyTable.numberOfSymbols();
 		frequencyTable.frequencySumBelow(-1);
 	}
@@ -75,21 +75,34 @@ class ArithmeticCoder {
 }
 
 class FrequencyTable {
+	// https://en.wikipedia.org/wiki/Fenwick_tree
+	private final int[] tree;
+	FrequencyTable(int symbolCount) {
+		tree = new int[symbolCount + 1];
+	}
+	private int rangeSum(int from, int to) {
+		assert 0 <= from && from <= to;
+		int sum = 0;
+		for(; to > from; to -= Integer.lowestOneBit(to))
+			sum += tree[to - 1];
+		for(; from > to; from -= Integer.lowestOneBit(from))
+			sum += tree[from - 1];
+		return sum;
+	}
 	int get(int symbol) {
-		System.out.println("FrequencyTable.get("+symbol+")");
-		return -1;
+		assert symbol >= 0;
+		return rangeSum(symbol, symbol + 1);
 	}
 	void set(int symbol, int frequency) {
 		System.out.println("FrequencyTable.set("+symbol+", "+frequency+")");
 	}
-	void increment(int symbol) {
-		System.out.println("FrequencyTable.increment("+symbol+")");
-		set(symbol, -1);
-		get(symbol);
+	void increment(int symbol, int amount) {
+		assert symbol >= 0;
+		for(; symbol < tree.length - 1; symbol += Integer.lowestOneBit(symbol))
+			tree[symbol] += amount;
 	}
 	int numberOfSymbols() {
-		System.out.println("FrequencyTable.numberOfSymbols()");
-		return -1;
+		return tree.length - 1;
 	}
 	int frequencySumBelow(int symbol) {
 		System.out.println("FrequencyTable.frequencySumBelow("+symbol+")");

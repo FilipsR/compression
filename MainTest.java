@@ -59,14 +59,14 @@ public class MainTest {
 
 	@Test
 	public void testFrequencyTable() {
-		FrequencyTable t = new FrequencyTable();
-		assertEquals(0, t.numberOfSymbols());
-		assertEquals(0, t.frequencySumBelow(123));
+		FrequencyTable t = new FrequencyTable(1234);
+		assertEquals(1234, t.numberOfSymbols());
 		assertEquals(0, t.get(456));
+		assertEquals(0, t.frequencySumBelow(123));
 
 		t.set(0, 4);
 		assertEquals(4, t.get(0));
-		assertEquals(1, t.numberOfSymbols());
+		assertEquals(1234, t.numberOfSymbols());
 		assertEquals(4, t.frequencySumBelow(123));
 	}
 }
