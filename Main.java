@@ -1,16 +1,11 @@
 import java.io.*;
+import java.util.*;
 public class Main {
 	public static void main(String[] args) throws IOException {
 		System.out.println("Main.main()");
 		LZ77 lz77 = new LZ77();
-		ArithmeticCoder arithmetic = new ArithmeticCoder();
 		BitInput input = new BitInput(System.in);
 		BitOutput output = new BitOutput(System.out);
-
-		lz77.compress(System.in, output);
-		arithmetic.compress(input, output);
-		arithmetic.decompress(input, output);
-		lz77.decompress(input, System.out);
 	}
 }
 
@@ -56,21 +51,14 @@ class BitOutput implements AutoCloseable {
 }
 
 class ArithmeticCoder {
-	void compress(BitInput input, BitOutput output) throws IOException {
-		System.out.println("ArithmeticCoder.compress("+input+", "+output+")");
-		input.readBit();
-		output.writeBit(0);
-		FrequencyTable frequencyTable = new FrequencyTable(0);
-		frequencyTable.get(-1);
-		frequencyTable.set(-1, -1);
-		frequencyTable.increment(-1, -1);
-		frequencyTable.numberOfSymbols();
-		frequencyTable.frequencySumBelow(-1);
+	private final FrequencyTable table;
+	ArithmeticCoder(FrequencyTable table) {
+		this.table = table;
 	}
-	void decompress(BitInput input, BitOutput output) throws IOException {
-		System.out.println("ArithmeticCoder.decompress("+input+", "+output+")");
-		input.readBit();
-		output.writeBit(0);
+	void compress(int symbol, BitOutput output) throws IOException {
+	}
+	int decompress(BitInput input) throws IOException {
+		return -1;
 	}
 }
 
@@ -111,6 +99,17 @@ class FrequencyTable {
 }
 
 class LZ77 {
+	// algoritma konstantes
+	private static int WINDOW_SIZE = 1024 * 4;
+	private static int MAX_LENGTH = 200;
+
+	// speciālie simboli
+	private static int MATCH = 256;
+	private static int EOF = 257;
+
+	private final ArithmeticCoder chars = new ArithmeticCoder(new FrequencyTable(256 + 2));
+	private final ArithmeticCoder lengths = new ArithmeticCoder(new FrequencyTable(MAX_LENGTH));
+	private final ArithmeticCoder distances = new ArithmeticCoder(new FrequencyTable(WINDOW_SIZE));
 	void compress(InputStream input, BitOutput output) throws IOException {
 		System.out.println("LZ77.compress("+input+", "+output+")");
 		output.writeBit(0);
@@ -120,7 +119,6 @@ class LZ77 {
 	}
 	void decompress(BitInput input, OutputStream output) throws IOException {
 		System.out.println("LZ77.decompress("+input+", "+output+")");
-		input.readBit();
 	}
 }
 
