@@ -98,17 +98,14 @@ class FrequencyTable {
 	int numberOfSymbols() {
 		return tree.length;
 	}
-	int frequencySumBelow(int symbol) {
+	int frequencySumBelow(int symbol, int symbol_1) {
 		System.out.println("FrequencyTable.frequencySumBelow("+symbol+")");
-		int i = 0, j = tree.length;
-		while (j != Integer.lowestOneBit(symbol))
-			j -= Integer.lowestOneBit(symbol);
-		for (; j > 0; j >>= 1) {
-			if (i + j <= tree.length && tree[symbol -1] <= symbol) {
-				symbol -= tree[symbol -1];
-				i += j;
-			}
-		}
+		int sum = 0;
+		assert 0 <= symbol && symbol <= symbol_1 && symbol_1 <= tree.length;
+		for (; symbol_1 > symbol; symbol_1 -= Integer.lowestOneBit(symbol_1))
+			sum += tree[symbol_1 -1];
+		for (; symbol > symbol_1; symbol -= Integer.lowestOneBit(symbol))
+			sum -= tree[symbol -1];
 		return -1;
 	}
 }
