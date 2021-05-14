@@ -103,8 +103,8 @@ class FrequencyTable {
 		int sum = 0;
 		assert 0 <= symbol && symbol <= tree.length;
 		for (; symbol > 0; symbol -= Integer.lowestOneBit(symbol));
-			sum += tree[symbol - 1];
-		return -1;
+			sum += tree[symbol + 1];
+		return sum;
 	}
 }
 
