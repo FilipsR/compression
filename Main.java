@@ -1,14 +1,35 @@
 import java.io.*;
 import java.util.*;
 public class Main {
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 
 		
 		Scanner sc = new Scanner(System.in);
 
 		String choiseStr = sc.nextLine();
 		
-		
+		System.out.println("function: ");
+		switch(choiseStr) {
+		case "comp":
+			comp();
+			break;
+		case "decomp":
+			decomp();
+			break;
+		case "size":
+			size();
+			break;
+		case "equal":
+			equal();
+			break;
+		case "about":
+			about();
+			break;
+		case "exit":
+			break;
+		default:
+			System.out.println("no match");
+		}
 		
 		
 		sc.close();
