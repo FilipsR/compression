@@ -9,6 +9,7 @@ public class Main {
 		String choiseStr = sc.nextLine();
 		
 		System.out.println("function: ");
+		loop: while (true) {
 		switch(choiseStr) {
 		case "comp":
 			comp();
@@ -26,11 +27,11 @@ public class Main {
 			about();
 			break;
 		case "exit":
-			break;
+			break loop;
 		default:
 			System.out.println("no match");
 		}
-		
+		}
 		
 		sc.close();
 	}
