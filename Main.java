@@ -51,13 +51,9 @@ class BitOutput implements AutoCloseable {
 }
 
 class ArithmeticCoder {
-	private final FrequencyTable table;
-	ArithmeticCoder(FrequencyTable table) {
-		this.table = table;
+	void compress(int symbol, FrequencyTable table, BitOutput output) throws IOException {
 	}
-	void compress(int symbol, BitOutput output) throws IOException {
-	}
-	int decompress(BitInput input) throws IOException {
+	int decompress(BitInput input, FrequencyTable table) throws IOException {
 		return -1;
 	}
 }
@@ -111,9 +107,10 @@ class LZ77 {
 	private static int MATCH = 256;
 	private static int EOF = 257;
 
-	private final ArithmeticCoder chars = new ArithmeticCoder(new FrequencyTable(256 + 2));
-	private final ArithmeticCoder lengths = new ArithmeticCoder(new FrequencyTable(MAX_LENGTH));
-	private final ArithmeticCoder distances = new ArithmeticCoder(new FrequencyTable(WINDOW_SIZE));
+	private final FrequencyTable chars = new FrequencyTable(256 + 2);
+	private final FrequencyTable lengths = new FrequencyTable(MAX_LENGTH);
+	private final FrequencyTable distances = new FrequencyTable(WINDOW_SIZE);
+	private final AritmeticCoder arithmetic = new ArithmeticCoder();
 
 	private final StringBuilder inputBuffer = new StringBuilder(MAX_LENGTH);
 	private final StringBuilder window = new StringBuilder(WINDOW_SIZE);
@@ -175,7 +172,6 @@ class LZ77 {
 		}
 	}
 	void decompress(BitInput input, OutputStream output) throws IOException {
-		System.out.println("LZ77.decompress("+input+", "+output+")");
 	}
 }
 
