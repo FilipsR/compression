@@ -17,7 +17,7 @@ public class main1 {
 			System.out.println("File does not exist");
 			return;
 		}
-		File file_1 = new File("C:\\Users\\karli\\Desktop\\compressed_file.txt");
+		File file_1 = new File("compressed_file.txt");
 		if(!file.exists()) {
 			file.createNewFile();
 		}
