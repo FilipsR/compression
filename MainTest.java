@@ -70,10 +70,20 @@ public class MainTest {
 		rational.div(100, 400);
 		assertEquals(3, rational.top);
 		assertEquals(1, rational.bottom);
+
+		ArithmeticCoder.Rational r1 = new ArithmeticCoder.Rational(108154296875L, 1000000000000L);
+		StringBuilder sb = new StringBuilder();
+		int digit;
+		while(r1.top != 0)
+			sb.append((char)('0' + r1.nextBit()));
+		assertEquals("0000110111011", sb.toString());
 	}
 
 	@Test
 	public void testMatch() {
+		Match m = new Match(100, 200);
+		assertEquals(100, m.distance());
+		assertEquals(200, m.length());
 	}
 
 	@Test
@@ -123,6 +133,9 @@ public class MainTest {
 
 	@Test
 	public void testLZ77() throws IOException {
+		BitOutput nullOutput = new BitOutput(new OutputStream() {
+			public void write(int b) {}
+		});
 		LZ77 lz = new LZ77();
 		StringBuilder literal = new StringBuilder();
 		List<Match> matches = new ArrayList<>();
@@ -131,7 +144,7 @@ public class MainTest {
 
 		{
 			InputStream inputStream = new ByteArrayInputStream("123word456word789".getBytes());
-			lz.compress(inputStream, null);
+			lz.compress(inputStream, nullOutput);
 			assertEquals("123word456789", literal.toString());
 			assertEquals(1, matches.size());
 			assertEquals(4, matches.get(0).length());
@@ -142,7 +155,7 @@ public class MainTest {
 
 		{
 			InputStream inputStream = new ByteArrayInputStream("blueblueblueblue".getBytes());
-			lz.compress(inputStream, null);
+			lz.compress(inputStream, nullOutput);
 			assertEquals("blue", literal.toString());
 			assertEquals(2, matches.size());
 			assertEquals(4, matches.get(0).length());

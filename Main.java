@@ -99,6 +99,12 @@ class ArithmeticCoder {
 		private void set(long nTop, long nBottom) {
 			long a = nTop;
 			long b = nBottom;
+			if(a == 0) {
+				top = a;
+				bottom = b;
+				return;
+			}
+
 			while(b != 0)
 				if(a > b)
 					a -= b;
@@ -109,6 +115,9 @@ class ArithmeticCoder {
 		}
 		Rational(long t, long b) {
 			set(t, b);
+		}
+		void set(Rational r) {
+			set(r.top, r.bottom);
 		}
 		void add(long t, long b) {
 			set(top*b + t*bottom, bottom * b);
@@ -122,8 +131,59 @@ class ArithmeticCoder {
 		void div(long t, long b) {
 			set(top*b, bottom*t);
 		}
+		int nextBit() {
+			int bit = top >= bottom ? 1 : 0;
+			top -= bit * bottom;
+			top <<= 1;
+			return bit;
+		}
+		void scale(Rational from, Rational to) {
+			Rational factor = to.copy();
+			factor.sub(from.top, from.bottom);
+			mul(factor.top, factor.bottom);
+			add(from.top, from.bottom);
+		}
+
+		void unit(Rational from, Rational to) {
+			Rational factor = to.copy();
+			factor.sub(from.top, from.bottom);
+			sub(from.top, from.bottom);
+			div(factor.top, factor.bottom);
+		}
+		Rational copy() {
+			return new Rational(top, bottom);
+		}
 	}
+
+	Rational from = new Rational(0, 0);
+	Rational to = new Rational(1, 0);
+	Rational low = new Rational(0, 0);
+	Rational high = new Rational(0, 0);
+	Rational fromBits = new Rational(0, 0);
+	Rational toBits = new Rational(0, 0);
+
 	void compress(int symbol, FrequencyTable table, BitOutput output) throws IOException {
+		int total = table.frequencySumBelow(table.numberOfSymbols());
+
+		low.set(table.frequencySumBelow(symbol), total);
+		low.scale(from, to);
+
+		high.set(table.frequencySumBelow(symbol+1), total);
+		high.scale(from, to);
+
+		from.set(low);
+		to.set(high);
+
+		table.add(symbol, 10);
+
+		int bit;
+		fromBits.set(from);
+		toBits.set(to);
+		while(fromBits.top != 0 && toBits.top != 0 && (bit = fromBits.nextBit()) == toBits.nextBit()) {
+			from.set(fromBits);
+			to.set(toBits);
+			output.writeBit(bit);
+		}
 	}
 	int decompress(BitInput input, FrequencyTable table) throws IOException {
 		return -1;
