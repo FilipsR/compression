@@ -4,8 +4,33 @@ public class Main {
 	public static void main(String[] args) throws IOException {
 		System.out.println("Main.main()");
 		LZ77 lz77 = new LZ77();
+		ArithmeticCoder arithmetic = new ArithmeticCoder(null);
 		BitInput input = new BitInput(System.in);
 		BitOutput output = new BitOutput(System.out);
+		
+		Scanner sc = new Scanner(System.in);
+		String filename = sc.nextLine();
+		
+		
+		File file = new File(filename);
+		if (!file.exists()) {
+			System.out.println("File does not exist");
+			return;
+		}
+		File file_1 = new File("compressed_file.txt");
+		if(!file.exists()) {
+			file.createNewFile();
+		}
+		FileInputStream fileInput = new FileInputStream(file);
+		FileOutputStream fileOutput = null;
+		
+		lz77.compress(fileInput, output);
+		lz77.decompress(input, fileOutput);
+		
+		fileOutput = new FileOutputStream(file_1);
+		
+
+		fileOutput.flush();
 	}
 }
 
