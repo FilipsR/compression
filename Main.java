@@ -124,7 +124,7 @@ public class Main {
 		
 		byte[] f1 = Files.readAllBytes(path1);
 		byte[] f2 = Files.readAllBytes(path2);
-		if (f1 == f2)
+		if (Arrays.equals(f1,f2))
 			System.out.println("true");
 		else
 			System.out.println("false");
