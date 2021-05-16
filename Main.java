@@ -110,7 +110,7 @@ class LZ77 {
 	private final FrequencyTable chars = new FrequencyTable(256 + 2);
 	private final FrequencyTable lengths = new FrequencyTable(MAX_LENGTH);
 	private final FrequencyTable distances = new FrequencyTable(WINDOW_SIZE);
-	private final AritmeticCoder arithmetic = new ArithmeticCoder();
+	private final ArithmeticCoder arithmetic = new ArithmeticCoder();
 
 	private final StringBuilder inputBuffer = new StringBuilder(MAX_LENGTH);
 	private final StringBuilder window = new StringBuilder(WINDOW_SIZE);
@@ -151,27 +151,46 @@ class LZ77 {
 				inputBuffer.append((char)nextByte);
 			}
 			if(inputBuffer.length() == 0)
-				return;
+				break;
 			// inputBuffer ir vismaz viens baits
 			Match match = longestPrefixInWindow();
 			if(match == null) {
 				char c = inputBuffer.charAt(0);
-				// TODO izvada c
 				debugCharAction.accept(c);
+				arithmetic.compress(c, chars, output);
 				trimWindow();
 				window.append(c);
 				inputBuffer.delete(0, 1);
 			} else {
+				arithmetic.compress(MATCH, chars, output);
+				arithmetic.compress(match.distance(), distances, output);
+				arithmetic.compress(match.length(), lengths, output);
 				debugMatchAction.accept(match);
 				int len = match.length();
 				trimWindow();
 				window.append(inputBuffer, 0, len);
 				inputBuffer.delete(0, len);
-				// TODO izvada match
 			}
 		}
+		arithmetic.compress(EOF, chars, output);
 	}
+	private void paste(int distance, int length, OutputStream output) throws IOException {
+		for(int i = window.length() - distance, end = window.length() - distance + length; i < end; i++)
+			output.write(window.charAt(i));
+	}
+
 	void decompress(BitInput input, OutputStream output) throws IOException {
+		int symbol;
+		while((symbol = arithmetic.decompress(input, chars)) != EOF) {
+			if(symbol == MATCH) {
+				int distance = arithmetic.decompress(input, distances);
+				int length = arithmetic.decompress(input, lengths);
+				paste(distance, length, output);
+			} else {
+				window.append((char)symbol);
+			}
+			trimWindow();
+		}
 	}
 }
 

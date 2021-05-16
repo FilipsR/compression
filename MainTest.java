@@ -1,4 +1,5 @@
 import java.io.*;
+import java.nio.file.*;
 import java.util.*;
 
 import org.junit.Test;
@@ -134,5 +135,36 @@ public class MainTest {
 			matches.clear();
 			literal.delete(0, literal.length());
 		}
+	}
+
+	private static void testWith(byte[] source) throws IOException {
+		ByteArrayOutputStream tmp = new ByteArrayOutputStream();
+		try(
+			BitOutput output = new BitOutput(tmp)
+		) {
+			LZ77 lz = new LZ77();
+			lz.compress(new ByteArrayInputStream(source), output);
+		}
+		assertTrue(false);
+
+//		try(
+//			BitInput input = new BitInput(new ByteArrayInputStream(tmp.toByteArray()))
+//		) {
+//			tmp.reset();
+//			LZ77 lz = new LZ77();
+//			lz.decompress(input, tmp);
+//		}
+//
+//		assertArrayEquals(source, tmp.toByteArray());
+	}
+
+	@Test
+	public void testIntegrationRandom() throws IOException {
+		testWith(Files.readAllBytes(Paths.get("test/dev-random-1k")));
+	}
+
+	@Test
+	public void testIntegrationLoremIpsum() throws IOException {
+		testWith(Files.readAllBytes(Paths.get("test/lorem-ipsum-7k")));
 	}
 }
