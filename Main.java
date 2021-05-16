@@ -3,12 +3,12 @@ import java.util.*;
 public class Main {
 	public static void main(String[] args) throws Exception {
 
-		
+		System.out.println("function: ");
 		Scanner sc = new Scanner(System.in);
 
 		String choiseStr = sc.nextLine();
 		
-		System.out.println("function: ");
+		
 		loop: while (true) {
 		switch(choiseStr) {
 		case "comp":
