@@ -105,6 +105,7 @@ class LZ77 {
 	// algoritma konstantes
 	private static int WINDOW_SIZE = 1024 * 4;
 	private static int MAX_LENGTH = 200;
+	private static int MIN_LENGTH = 3;
 
 	// speciālie simboli
 	private static int MATCH = 256;
@@ -113,12 +114,65 @@ class LZ77 {
 	private final ArithmeticCoder chars = new ArithmeticCoder(new FrequencyTable(256 + 2));
 	private final ArithmeticCoder lengths = new ArithmeticCoder(new FrequencyTable(MAX_LENGTH));
 	private final ArithmeticCoder distances = new ArithmeticCoder(new FrequencyTable(WINDOW_SIZE));
+
+	private final StringBuilder inputBuffer = new StringBuilder(MAX_LENGTH);
+	private final StringBuilder window = new StringBuilder(WINDOW_SIZE);
+
+	// testēšanai
+	java.util.function.Consumer<Match> debugMatchAction = m -> {};
+	java.util.function.IntConsumer debugCharAction = c -> {};
+
+	private Match longestPrefixInWindow() {
+		int bestStart = -1;
+		int bestLength = -1;
+		for(int start = window.length() - MIN_LENGTH; start >= 0; start--) {
+			int mismatch = 0;
+			int limit = Math.min(window.length() - start, inputBuffer.length());
+			while(mismatch < limit && window.charAt(start + mismatch) == inputBuffer.charAt(mismatch))
+				mismatch++;
+			if(mismatch >= MIN_LENGTH && mismatch > bestLength) {
+				bestLength = mismatch;
+				bestStart = start;
+			}
+		}
+		return bestStart >= 0 ? new Match(window.length() - bestStart, bestLength) : null;
+	}
+
+	private void trimWindow() {
+		int len = window.length();
+		if(len > WINDOW_SIZE)
+			window.delete(0, len - WINDOW_SIZE);
+	}
+
 	void compress(InputStream input, BitOutput output) throws IOException {
-		System.out.println("LZ77.compress("+input+", "+output+")");
-		output.writeBit(0);
-		Match match = new Match();
-		match.length();
-		match.distance();
+		while(true) {
+			while(inputBuffer.length() < MAX_LENGTH) {
+				// mēģina nolasīt vairāk datu
+				int nextByte = input.read();
+				if(nextByte == -1)
+					break; // vairāk nav ko lasīt, bet iespējams, ka inputBuffer vēl nav tukšs
+				inputBuffer.append((char)nextByte);
+			}
+			if(inputBuffer.length() == 0)
+				return;
+			// inputBuffer ir vismaz viens baits
+			Match match = longestPrefixInWindow();
+			if(match == null) {
+				char c = inputBuffer.charAt(0);
+				// TODO izvada c
+				debugCharAction.accept(c);
+				trimWindow();
+				window.append(c);
+				inputBuffer.delete(0, 1);
+			} else {
+				debugMatchAction.accept(match);
+				int len = match.length();
+				trimWindow();
+				window.append(inputBuffer, 0, len);
+				inputBuffer.delete(0, len);
+				// TODO izvada match
+			}
+		}
 	}
 	void decompress(BitInput input, OutputStream output) throws IOException {
 		System.out.println("LZ77.decompress("+input+", "+output+")");
@@ -126,12 +180,17 @@ class LZ77 {
 }
 
 class Match {
-	int length() {
-		System.out.println("Match.length()");
-		return -1;
+	private final int distance;
+	private final int length;
+	Match(int d, int l) {
+		assert d > 0 && l > 0;
+		distance = d;
+		length = l;
 	}
 	int distance() {
-		System.out.println("Match.distance()");
-		return -1;
+		return distance;
+	}
+	int length() {
+		return length;
 	}
 }

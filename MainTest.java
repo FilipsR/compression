@@ -1,4 +1,5 @@
 import java.io.*;
+import java.util.*;
 
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -100,5 +101,38 @@ public class MainTest {
 		t.add(0, 5);
 		assertEquals(15, t.frequencySumBelow(1233));
 		assertEquals(25, t.frequencySumBelow(1234));
+	}
+
+	@Test
+	public void testLZ77() throws IOException {
+		LZ77 lz = new LZ77();
+		StringBuilder literal = new StringBuilder();
+		List<Match> matches = new ArrayList<>();
+		lz.debugMatchAction = matches::add;
+		lz.debugCharAction = c -> literal.append((char)c);
+
+		{
+			InputStream inputStream = new ByteArrayInputStream("123word456word789".getBytes());
+			lz.compress(inputStream, null);
+			assertEquals("123word456789", literal.toString());
+			assertEquals(1, matches.size());
+			assertEquals(4, matches.get(0).length());
+			assertEquals(7, matches.get(0).distance());
+			matches.clear();
+			literal.delete(0, literal.length());
+		}
+
+		{
+			InputStream inputStream = new ByteArrayInputStream("blueblueblueblue".getBytes());
+			lz.compress(inputStream, null);
+			assertEquals("blue", literal.toString());
+			assertEquals(2, matches.size());
+			assertEquals(4, matches.get(0).length());
+			assertEquals(4, matches.get(0).distance());
+			assertEquals(8, matches.get(1).length());
+			assertEquals(8, matches.get(1).distance());
+			matches.clear();
+			literal.delete(0, literal.length());
+		}
 	}
 }
