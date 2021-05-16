@@ -104,8 +104,8 @@ class LZ77 {
 	private static int MIN_LENGTH = 3;
 
 	// speciālie simboli
-	private static int MATCH = 256;
-	private static int EOF = 257;
+	static int MATCH = 256;
+	static int EOF = 257;
 
 	private final FrequencyTable chars = new FrequencyTable(256 + 2);
 	private final FrequencyTable lengths = new FrequencyTable(MAX_LENGTH);
@@ -118,6 +118,7 @@ class LZ77 {
 	// testēšanai
 	java.util.function.Consumer<Match> debugMatchAction = m -> {};
 	java.util.function.IntConsumer debugCharAction = c -> {};
+	java.util.function.IntSupplier debugReadAction = null;
 
 	private Match longestPrefixInWindow() {
 		int bestStart = -1;
@@ -181,12 +182,13 @@ class LZ77 {
 
 	void decompress(BitInput input, OutputStream output) throws IOException {
 		int symbol;
-		while((symbol = arithmetic.decompress(input, chars)) != EOF) {
+		while((symbol = debugReadAction != null ? debugReadAction.getAsInt() : arithmetic.decompress(input, chars)) != EOF) {
 			if(symbol == MATCH) {
-				int distance = arithmetic.decompress(input, distances);
-				int length = arithmetic.decompress(input, lengths);
+				int distance = debugReadAction != null ? debugReadAction.getAsInt() : arithmetic.decompress(input, distances);
+				int length = debugReadAction != null ? debugReadAction.getAsInt() : arithmetic.decompress(input, lengths);
 				paste(distance, length, output);
 			} else {
+				output.write((char)symbol);
 				window.append((char)symbol);
 			}
 			trimWindow();

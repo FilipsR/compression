@@ -135,6 +135,22 @@ public class MainTest {
 			matches.clear();
 			literal.delete(0, literal.length());
 		}
+
+		{
+			ByteArrayOutputStream output = new ByteArrayOutputStream();
+			Iterator<Integer> input = Arrays.<Integer>asList((int)'a', (int)'b', (int)'c', LZ77.EOF).iterator();
+			lz.debugReadAction = () -> input.next();
+			lz.decompress(null, output);
+			assertEquals("abc", new String(output.toByteArray()));
+		}
+
+		{
+			ByteArrayOutputStream output = new ByteArrayOutputStream();
+			Iterator<Integer> input = Arrays.<Integer>asList((int)'a', (int)'b', (int)'c', LZ77.MATCH, 3, 3, LZ77.MATCH, 5, 4, LZ77.EOF).iterator();
+			lz.debugReadAction = () -> input.next();
+			lz.decompress(null, output);
+			assertEquals("abcabc"+"bcab", new String(output.toByteArray()));
+		}
 	}
 
 	private static void testWith(byte[] source) throws IOException {
