@@ -4,7 +4,6 @@ public class Main {
 	public static void main(String[] args) throws IOException {
 		System.out.println("Main.main()");
 		LZ77 lz77 = new LZ77();
-		ArithmeticCoder arithmetic = new ArithmeticCoder(null);
 		BitInput input = new BitInput(System.in);
 		BitOutput output = new BitOutput(System.out);
 		
@@ -27,10 +26,13 @@ public class Main {
 		lz77.compress(fileInput, output);
 		lz77.decompress(input, fileOutput);
 		
+		byte[] bytes = filename.getBytes();
+		
 		fileOutput = new FileOutputStream(file_1);
 		
-
+		fileOutput.write(bytes);
 		fileOutput.flush();
+		sc.close();
 	}
 }
 
