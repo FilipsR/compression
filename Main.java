@@ -2,7 +2,6 @@ import java.io.*;
 import java.util.*;
 public class Main {
 	public static void main(String[] args) throws IOException {
-		System.out.println("Main.main()");
 		LZ77 lz77 = new LZ77();
 		BitInput input = new BitInput(System.in);
 		BitOutput output = new BitOutput(System.out);
@@ -47,7 +46,6 @@ class BitInput implements AutoCloseable {
 	}
 
 	int readBit(int bit) throws IOException {
-		System.out.println("BitInput.readBit");
 		assert 0 <= bitCount && bitCount <= 8 : "bit count out of range";
 		assert bit == 0 || bit == 1 : "bit must be 0 or 1";
 		if(bitCount == 8) {
