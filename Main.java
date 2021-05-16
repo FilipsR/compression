@@ -58,9 +58,11 @@ public class Main {
 		
 		lz77.decompress(input, fileOutput);
 		
-		byte[] bytes = filename.getBytes();
-		
 		fileOutput = new FileOutputStream(file_1);
+		
+		String data = file_1.toString();
+		byte[] bytes = data.getBytes();
+		
 		
 		fileOutput.write(bytes);
 		
