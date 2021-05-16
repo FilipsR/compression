@@ -38,16 +38,33 @@ public class Main {
 }
 
 class BitInput implements AutoCloseable {
+	private int bits;
+	private int bitCount = 0;
+	private final InputStream stream;
+	
 	BitInput(InputStream stream) {
+		this.stream = stream;
 	}
 
-	int readBit() {
+	int readBit(int bit) throws IOException {
 		System.out.println("BitInput.readBit");
+		assert 0 <= bitCount && bitCount <= 8 : "bit count out of range";
+		assert bit == 0 || bit == 1 : "bit must be 0 or 1";
+		if(bitCount == 8) {
+			stream.read(bits);
+			bits = bitCount = 0;
+		}
+		bits = (bits << 1) | bit;
+		bitCount++;
 		return -1;
 	}
 
 	@Override
-	public void close() {}
+	public void close() throws IOException {
+	if(bitCount != 0)
+			stream.read(bits);
+		stream.close();
+	}
 }
 
 class BitOutput implements AutoCloseable {
