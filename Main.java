@@ -127,7 +127,7 @@ class FrequencyTable {
 			sum += tree[symbol - 1];
 		return sum;
 	}
-	int firstSymbolbelow(int symbol){
+	int firstSymbolBelow(int symbol){
 		int i = 0; j = tree.length;
 		while(j != Integer.lowestOneBit(tree.length))
 			j -= Integer.lowestOneBit(tree.length);
