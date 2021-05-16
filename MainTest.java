@@ -56,6 +56,23 @@ public class MainTest {
 	}
 
 	@Test
+	public void testRational() {
+		ArithmeticCoder.Rational rational = new ArithmeticCoder.Rational(2, 4);
+		assertEquals(1, rational.top);
+		assertEquals(2, rational.bottom);
+		rational.add(1, 1);
+		rational.sub(0, 100);
+		assertEquals(3, rational.top);
+		assertEquals(2, rational.bottom);
+		rational.mul(1, 2);
+		assertEquals(3, rational.top);
+		assertEquals(4, rational.bottom);
+		rational.div(100, 400);
+		assertEquals(3, rational.top);
+		assertEquals(1, rational.bottom);
+	}
+
+	@Test
 	public void testMatch() {
 	}
 

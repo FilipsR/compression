@@ -51,6 +51,35 @@ class BitOutput implements AutoCloseable {
 }
 
 class ArithmeticCoder {
+	static final class Rational {
+		long top, bottom;
+		private void set(long nTop, long nBottom) {
+			long a = nTop;
+			long b = nBottom;
+			while(b != 0)
+				if(a > b)
+					a -= b;
+				else
+					b -= a;
+			top = nTop / a;
+			bottom = nBottom / a;
+		}
+		Rational(long t, long b) {
+			set(t, b);
+		}
+		void add(long t, long b) {
+			set(top*b + t*bottom, bottom * b);
+		}
+		void sub(long t, long b) {
+			set(top*b - t*bottom, bottom * b);
+		}
+		void mul(long t, long b) {
+			set(top*t, bottom*b);
+		}
+		void div(long t, long b) {
+			set(top*b, bottom*t);
+		}
+	}
 	void compress(int symbol, FrequencyTable table, BitOutput output) throws IOException {
 	}
 	int decompress(BitInput input, FrequencyTable table) throws IOException {
