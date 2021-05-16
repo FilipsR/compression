@@ -31,6 +31,7 @@ public class Main {
 		fileOutput = new FileOutputStream(file_1);
 		
 		fileOutput.write(bytes);
+		
 		fileOutput.flush();
 		sc.close();
 	}
@@ -125,6 +126,17 @@ class FrequencyTable {
 		for (; symbol > 0; symbol -= Integer.lowestOneBit(symbol))
 			sum += tree[symbol - 1];
 		return sum;
+	}
+	int firstSymbolbelow(int symbol){
+		int i = 0; j = tree.length;
+		while(j != Integer.lowestOneBit(tree.length))
+			j -= Integer.lowestOneBit(tree.length);
+		for (; j > 0; j >>= 1){
+			if ( i + j <= tree.length && tree[i + j - 1] <= symbol){
+				symbol -= tree[i + j -1];
+			}
+		}		
+		return i;
 	}
 }
 
