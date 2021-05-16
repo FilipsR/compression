@@ -2,24 +2,67 @@ import java.io.*;
 import java.util.*;
 public class Main {
 	public static void main(String[] args) throws IOException {
-		System.out.println("Main.main()");
 		LZ77 lz77 = new LZ77();
 		BitInput input = new BitInput(System.in);
 		BitOutput output = new BitOutput(System.out);
+		
+		Scanner sc = new Scanner(System.in);
+		String filename = sc.nextLine();
+		
+		
+		File file = new File(filename);
+		if (!file.exists()) {
+			System.out.println("File does not exist");
+			return;
+		}
+		File file_1 = new File("compressed_file.txt");
+		if(!file.exists()) {
+			file.createNewFile();
+		}
+		FileInputStream fileInput = new FileInputStream(file);
+		FileOutputStream fileOutput = null;
+		
+		lz77.compress(fileInput, output);
+		lz77.decompress(input, fileOutput);
+		
+		byte[] bytes = filename.getBytes();
+		
+		fileOutput = new FileOutputStream(file_1);
+		
+		fileOutput.write(bytes);
+		
+		fileOutput.flush();
+		sc.close();
 	}
 }
 
 class BitInput implements AutoCloseable {
+	private int bits;
+	private int bitCount = 0;
+	private final InputStream stream;
+
 	BitInput(InputStream stream) {
+		this.stream = stream;
 	}
 
-	int readBit() {
-		System.out.println("BitInput.readBit");
-		return -1;
+	int readBit() throws IOException {
+		assert 0 <= bitCount && bitCount <= 8 : "bit count out of range";
+		if(bitCount == 0) {
+			bits = stream.read();
+			if(bits == -1)
+				return -1;
+			bitCount = 8;
+		}
+		int result = bits & 1;
+		bits >>= 1;
+		bitCount--;
+		return result;
 	}
 
 	@Override
-	public void close() {}
+	public void close() throws IOException {
+		stream.close();
+	}
 }
 
 class BitOutput implements AutoCloseable {
@@ -123,6 +166,18 @@ class FrequencyTable {
 		for (; symbol > 0; symbol -= Integer.lowestOneBit(symbol))
 			sum += tree[symbol - 1];
 		return sum;
+	}
+	int firstSymbolBelow(int sum){
+		int i = 0, j = tree.length;
+		while(j != Integer.lowestOneBit(j))
+			j -= Integer.lowestOneBit(j);
+		for (; j > 0; j >>= 1){
+			if ( i + j <= tree.length && tree[i + j - 1] <= sum){
+				sum -= tree[i + j -1];
+				i += j;
+			}
+		}
+		return i;
 	}
 }
 
