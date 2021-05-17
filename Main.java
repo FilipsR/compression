@@ -49,14 +49,18 @@ class BitInput implements AutoCloseable {
 		assert 0 <= bitCount && bitCount <= 8 : "bit count out of range";
 		if(bitCount == 0) {
 			bits = stream.read();
-			if(bits == -1)
+			if(bits == -1) {
+				bitCount = 0;
 				return -1;
+			}
 			bitCount = 8;
 		}
-		int result = bits & 1;
-		bits >>= 1;
+//		int result = bits & 1;
+//		bits >>>= 1;
+//		bitCount--;
+//		return result;
 		bitCount--;
-		return result;
+		return (bits >>> bitCount) & 1;
 	}
 
 	@Override
@@ -132,10 +136,17 @@ class ArithmeticCoder {
 			set(top*b, bottom*t);
 		}
 		int nextBit() {
+			return top >= bottom ? 1 : 0;
+		}
+		int next2Bits() {
+			int bit1 = top >= bottom ? 1 : 0;
+			long nTop = (top - bit1 * bottom) << 1;
+			int bit2 = nTop >= bottom ? 2 : 0;
+			return bit1 | bit2;
+		}
+		void shift() {
 			int bit = top >= bottom ? 1 : 0;
-			top -= bit * bottom;
-			top <<= 1;
-			return bit;
+			set((top - bit*bottom) << 1, bottom);
 		}
 		void scale(Rational from, Rational to) {
 			Rational factor = to.copy();
@@ -153,40 +164,136 @@ class ArithmeticCoder {
 		Rational copy() {
 			return new Rational(top, bottom);
 		}
-	}
-
-	Rational from = new Rational(0, 0);
-	Rational to = new Rational(1, 0);
-	Rational low = new Rational(0, 0);
-	Rational high = new Rational(0, 0);
-	Rational fromBits = new Rational(0, 0);
-	Rational toBits = new Rational(0, 0);
-
-	void compress(int symbol, FrequencyTable table, BitOutput output) throws IOException {
-		int total = table.frequencySumBelow(table.numberOfSymbols());
-
-		low.set(table.frequencySumBelow(symbol), total);
-		low.scale(from, to);
-
-		high.set(table.frequencySumBelow(symbol+1), total);
-		high.scale(from, to);
-
-		from.set(low);
-		to.set(high);
-
-		table.add(symbol, 10);
-
-		int bit;
-		fromBits.set(from);
-		toBits.set(to);
-		while(fromBits.top != 0 && toBits.top != 0 && (bit = fromBits.nextBit()) == toBits.nextBit()) {
-			from.set(fromBits);
-			to.set(toBits);
-			output.writeBit(bit);
+		public String toString() {
+			Rational r = copy();
+			StringBuilder sb = new StringBuilder();
+			int len = 0;
+			while(r.top != 0 && len++ < 32) {
+				sb.append((char)('0' + r.nextBit()));
+				r.shift();
+				if(len == 1)
+					sb.append('.');
+			}
+			return top+"/"+bottom+"="+sb;
 		}
 	}
+
+	private static final long NUM_BITS = 32;
+	private static final long FULL_RANGE = 1L << NUM_BITS;
+	private static final long HALF_RANGE = FULL_RANGE >>> 1;
+	private static final long QUARTER_RANGE = HALF_RANGE >>> 1;
+	private static final long MINIMUM_RANGE = QUARTER_RANGE + 2;
+	private static final long MAXIMUM_TOTAL = Math.min(Long.MAX_VALUE / FULL_RANGE, MINIMUM_RANGE);
+	private static final long STATE_MASK = FULL_RANGE - 1;
+
+	private long low = 0;
+	private long high = STATE_MASK;
+	private long code;
+	private long underflow;
+	private boolean decompress = false;
+	private boolean init = false;
+
+	private BitInput input;
+	private BitOutput output;
+
+	void finish() throws IOException {
+		output.writeBit(1);
+		output.close();
+	}
+
+	private void update(int symbol, FrequencyTable table) throws IOException {
+		long range = high - low + 1;
+		assert MINIMUM_RANGE <= range && range <= FULL_RANGE;
+		long total = table.frequencySumBelow(table.numberOfSymbols());
+		long symLow = table.frequencySumBelow(symbol);
+		long symHigh = table.frequencySumBelow(symbol + 1);
+		assert symLow < symHigh;
+		assert total < MAXIMUM_TOTAL;
+
+		long newLow = low + symLow * range / total;
+		long newHigh = low + symHigh * range / total - 1;
+		low = newLow;
+		high = newHigh;
+
+		while(((low ^ high) & HALF_RANGE) == 0) {
+			shift();
+			low = (low << 1) & STATE_MASK;
+			high = ((high << 1) & STATE_MASK) | 1;
+		}
+		while((low &~ high & QUARTER_RANGE) != 0) {
+			underflow();
+			low = (low << 1) ^ HALF_RANGE;
+			high = ((high ^ HALF_RANGE) << 1) | HALF_RANGE | 1;
+		}
+	}
+
+	private int codeBitOrZero() throws IOException {
+		int bit = input.readBit();
+		return bit == -1 ? 0 : bit;
+	}
+
+	private void shift() throws IOException {
+		if(decompress) {
+			code = ((code << 1) & STATE_MASK) | codeBitOrZero();
+		} else {
+			int bit = (int)(low >>> (NUM_BITS - 1));
+			output.writeBit(bit);
+			while(underflow-- > 0)
+				output.writeBit(bit ^ 1);
+		}
+	}
+
+	private void underflow() throws IOException {
+		if(decompress) {
+			code = (code & HALF_RANGE) | ((code << 1) & (STATE_MASK >>> 1)) | codeBitOrZero();
+		} else {
+			assert underflow < Integer.MAX_VALUE;
+			underflow++;
+		}
+	}
+
+	private int read(FrequencyTable table) throws IOException {
+		long range = high - low + 1;
+		assert MINIMUM_RANGE <= range && range <= FULL_RANGE : "out of range: "+range;
+		long total = table.frequencySumBelow(table.numberOfSymbols());
+		long offset = code - low;
+		long value = ((offset + 1) * total - 1) / range;
+		assert value * range / total <= offset;
+		assert 0 <= value && value < total : "value out of range: "+value;
+//		int symbol = table.numberOfSymbols();
+//		while(--symbol <= 0)
+//			if(table.frequencySumBelow(symbol) <= value)
+//				break;
+		int symbol = table.firstSymbolBelow((int)value);
+		assert offset >= table.frequencySumBelow(symbol) * range / total : "offset too big: "+offset;
+		assert offset < table.frequencySumBelow(symbol+1) * range / total : "offset too small: "+offset;
+		update(symbol, table);
+		assert code >= low && code <= high : "code out of range: "+code;
+		return symbol;
+	}
+
+	void compress(int symbol, FrequencyTable table, BitOutput output) throws IOException {
+		decompress = false;
+		this.output = output;
+		update(symbol, table);
+//		for(int i = 0; i < 8; i++) {
+//			output.writeBit((symbol >>> i) & 1);
+//		}
+	}
 	int decompress(BitInput input, FrequencyTable table) throws IOException {
-		return -1;
+		decompress = true;
+		this.input = input;
+		if(!init) {
+			for(int i = 0; i < NUM_BITS; i++)
+				code = (code << 1) | codeBitOrZero();
+			init = true;
+		}
+		return read(table);
+//		int symbol = 0;
+//		for(int i = 0; i < 8; i++) {
+//			symbol = (symbol << 1) | codeBitOrZero();
+//		}
+//		return symbol;
 	}
 }
 
@@ -204,6 +311,10 @@ class FrequencyTable {
 		for(; from > to; from -= Integer.lowestOneBit(from))
 			sum -= tree[from - 1];
 		return sum;
+	}
+	void setAll(int val) {
+		for(int i = 0; i < tree.length; i++)
+			set(i, val);
 	}
 	void add(int symbol, int delta) {
 		assert 0 <= symbol && symbol < tree.length;
@@ -227,6 +338,12 @@ class FrequencyTable {
 			sum += tree[symbol - 1];
 		return sum;
 	}
+	int firstSymbolAbove(int sum) {
+		int symbol = 0;
+		while(symbol < tree.length && frequencySumBelow(symbol) < sum)
+			symbol++;
+		return symbol;
+	}
 	int firstSymbolBelow(int sum){
 		int i = 0, j = tree.length;
 		while(j != Integer.lowestOneBit(j))
@@ -243,18 +360,23 @@ class FrequencyTable {
 
 class LZ77 {
 	// algoritma konstantes
-	private static int WINDOW_SIZE = 1024 * 4;
-	private static int MAX_LENGTH = 200;
-	private static int MIN_LENGTH = 3;
+	static int WINDOW_SIZE = 4000;
+	static int MAX_LENGTH = 200;
+	static int MIN_LENGTH = 3;
 
 	// speciālie simboli
 	static int MATCH = 256;
 	static int EOF = 257;
 
 	private final FrequencyTable chars = new FrequencyTable(256 + 2);
-	private final FrequencyTable lengths = new FrequencyTable(MAX_LENGTH);
-	private final FrequencyTable distances = new FrequencyTable(WINDOW_SIZE);
+	private final FrequencyTable lengths = new FrequencyTable(MAX_LENGTH + 1);
+	private final FrequencyTable distances = new FrequencyTable(WINDOW_SIZE + 1);
 	private final ArithmeticCoder arithmetic = new ArithmeticCoder();
+	{
+		chars.setAll(1);
+		lengths.setAll(1);
+		distances.setAll(1);
+	}
 
 	private final StringBuilder inputBuffer = new StringBuilder(MAX_LENGTH);
 	private final StringBuilder window = new StringBuilder(WINDOW_SIZE);
@@ -282,7 +404,7 @@ class LZ77 {
 
 	private void trimWindow() {
 		int len = window.length();
-		if(len > WINDOW_SIZE)
+		if(len >= WINDOW_SIZE)
 			window.delete(0, len - WINDOW_SIZE);
 	}
 
@@ -318,6 +440,7 @@ class LZ77 {
 			}
 		}
 		arithmetic.compress(EOF, chars, output);
+		arithmetic.finish();
 	}
 	private void paste(int distance, int length, OutputStream output) throws IOException {
 		for(int i = window.length() - distance, end = window.length() - distance + length; i < end; i++)
@@ -345,6 +468,7 @@ class Match {
 	private final int length;
 	Match(int d, int l) {
 		assert d > 0 && l > 0;
+		assert d < LZ77.WINDOW_SIZE && l < LZ77.MAX_LENGTH;
 		distance = d;
 		length = l;
 	}
