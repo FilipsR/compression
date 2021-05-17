@@ -56,32 +56,6 @@ public class MainTest {
 	}
 
 	@Test
-	public void testRational() {
-		ArithmeticCoder.Rational rational = new ArithmeticCoder.Rational(2, 4);
-		assertEquals(1, rational.top);
-		assertEquals(2, rational.bottom);
-		rational.add(1, 1);
-		rational.sub(0, 100);
-		assertEquals(3, rational.top);
-		assertEquals(2, rational.bottom);
-		rational.mul(1, 2);
-		assertEquals(3, rational.top);
-		assertEquals(4, rational.bottom);
-		rational.div(100, 400);
-		assertEquals(3, rational.top);
-		assertEquals(1, rational.bottom);
-
-		ArithmeticCoder.Rational r1 = new ArithmeticCoder.Rational(108154296875L, 1000000000000L);
-		StringBuilder sb = new StringBuilder();
-		int digit;
-		while(r1.top != 0) {
-			sb.append((char)('0' + r1.nextBit()));
-			r1.shift();
-		}
-		assertEquals("0000110111011", sb.toString());
-	}
-
-	@Test
 	public void testArithmeticCoder() throws IOException {
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		try(BitOutput bitOut = new BitOutput(out)) {
