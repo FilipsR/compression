@@ -81,35 +81,35 @@ class BitOutput implements AutoCloseable {
 	void writeBit(int bit) throws IOException {
 		assert 0 <= bitCount && bitCount <= 8 : "bit count out of range";
 		assert bit == 0 || bit == 1 : "bit must be 0 or 1";
+		bits = (bits << 1) | bit;
+		bitCount++;
 		if(bitCount == 8) {
 			stream.write(bits);
 			bits = bitCount = 0;
 		}
-		bits = (bits << 1) | bit;
-		bitCount++;
 	}
 
 	@Override
 	public void close() throws IOException {
-		if(bitCount != 0)
-			stream.write(bits);
+		while(bitCount != 0)
+			writeBit(0);
 		stream.close();
 	}
 }
 
 class ArithmeticCoder {
-	private static final long NUM_BITS = 32;
-	private static final long FULL_RANGE = 1L << NUM_BITS;
-	private static final long HALF_RANGE = FULL_RANGE >>> 1;
-	private static final long QUARTER_RANGE = HALF_RANGE >>> 1;
-	private static final long MINIMUM_RANGE = QUARTER_RANGE + 2;
-	private static final long MAXIMUM_TOTAL = Math.min(Long.MAX_VALUE / FULL_RANGE, MINIMUM_RANGE);
-	private static final long STATE_MASK = FULL_RANGE - 1;
+	private static final long ST_BITS = 32;
+	private static final long FULL = (1L << ST_BITS);
+	private static final long HALF = (FULL >>> 1);
+	private static final long QUARTER = (HALF >>> 1);
+	private static final long MIN_RANGE = (QUARTER + 2);
+	private static final long MAX_SUM = Math.min(Long.MAX_VALUE / FULL, MIN_RANGE);
+	private static final long MASK = (FULL - 1);
 
 	private long low = 0;
-	private long high = STATE_MASK;
-	private long code;
-	private long underflow;
+	private long high = MASK;
+	private long code = 0;
+	private long under = 0;
 	private boolean decompress = false;
 	private boolean init = false;
 
@@ -118,102 +118,103 @@ class ArithmeticCoder {
 
 	void finish() throws IOException {
 		output.writeBit(1);
-		output.close();
 	}
 
-	private void update(int symbol, FrequencyTable table) throws IOException {
-		long range = high - low + 1;
-		assert MINIMUM_RANGE <= range && range <= FULL_RANGE;
-		long total = table.frequencySumBelow(table.numberOfSymbols());
-		long symLow = table.frequencySumBelow(symbol);
-		long symHigh = table.frequencySumBelow(symbol + 1);
-		assert symLow < symHigh;
-		assert total < MAXIMUM_TOTAL;
+	void shift() throws IOException {
+		if(!decompress) {
+			int bit = (int)(low >> (ST_BITS - 1));
+			output.writeBit(bit);
+			for(; under > 0; under--)
+				output.writeBit(bit ^ 1);
+		} else {
+			code = ((code << 1) & MASK) | get();
+		}
+	}
 
+	void underflow() throws IOException {
+		if(!decompress) {
+			assert under < Integer.MAX_VALUE;
+			under++;
+		} else {
+			code = (code & HALF) | ((code << 1) & (MASK >> 1)) | get();
+		}
+	}
+
+
+	void update(int sym, FrequencyTable freq) throws IOException {
+		assert low < high && (low & MASK) == low && (high & MASK) == high;
+		long range = high - low + 1;
+		assert range >= MIN_RANGE && range <= FULL;
+		long total = freq.frequencySumBelow(freq.numberOfSymbols());
+		long symLow = freq.frequencySumBelow(sym);
+		long symHigh = freq.frequencySumBelow(sym+1);
+		assert symLow != symHigh;
+		assert total <= MAX_SUM;
 		long newLow = low + symLow * range / total;
 		long newHigh = low + symHigh * range / total - 1;
 		low = newLow;
 		high = newHigh;
-
-		while(((low ^ high) & HALF_RANGE) == 0) {
+		while(((low ^ high) & HALF) == 0) {
 			shift();
-			low = (low << 1) & STATE_MASK;
-			high = ((high << 1) & STATE_MASK) | 1;
+			low  = ((low  << 1) & MASK);
+			high = ((high << 1) & MASK) | 1;
 		}
-		while((low &~ high & QUARTER_RANGE) != 0) {
+		while((low &~ high & QUARTER) != 0) {
 			underflow();
-			low = (low << 1) ^ HALF_RANGE;
-			high = ((high ^ HALF_RANGE) << 1) | HALF_RANGE | 1;
+			low = (low << 1) ^ HALF;
+			high = ((high ^ HALF) << 1) | HALF | 1;
 		}
 	}
 
-	private int codeBitOrZero() throws IOException {
+	private int get() throws IOException {
 		int bit = input.readBit();
 		return bit == -1 ? 0 : bit;
 	}
 
-	private void shift() throws IOException {
-		if(decompress) {
-			code = ((code << 1) & STATE_MASK) | codeBitOrZero();
-		} else {
-			int bit = (int)(low >>> (NUM_BITS - 1));
-			output.writeBit(bit);
-			while(underflow-- > 0)
-				output.writeBit(bit ^ 1);
-		}
-	}
-
-	private void underflow() throws IOException {
-		if(decompress) {
-			code = (code & HALF_RANGE) | ((code << 1) & (STATE_MASK >>> 1)) | codeBitOrZero();
-		} else {
-			assert underflow < Integer.MAX_VALUE;
-			underflow++;
-		}
-	}
-
-	private int read(FrequencyTable table) throws IOException {
-		long range = high - low + 1;
-		assert MINIMUM_RANGE <= range && range <= FULL_RANGE : "out of range: "+range;
+	int decode(FrequencyTable table) throws IOException {
 		long total = table.frequencySumBelow(table.numberOfSymbols());
+		assert total <= MAX_SUM;
+		long range = high - low + 1;
 		long offset = code - low;
 		long value = ((offset + 1) * total - 1) / range;
 		assert value * range / total <= offset;
-		assert 0 <= value && value < total : "value out of range: "+value;
-//		int symbol = table.numberOfSymbols();
-//		while(--symbol <= 0)
-//			if(table.frequencySumBelow(symbol) <= value)
-//				break;
-		int symbol = table.firstSymbolBelow((int)value);
-		assert offset >= table.frequencySumBelow(symbol) * range / total : "offset too big: "+offset;
-		assert offset < table.frequencySumBelow(symbol+1) * range / total : "offset too small: "+offset;
-		update(symbol, table);
-		assert code >= low && code <= high : "code out of range: "+code;
-		return symbol;
+		assert value >= 0 && value < total;
+		int start = 0;
+		int end = table.numberOfSymbols();
+		while(end - start > 1) {
+			int mid = (start + end) / 2;
+			if(table.frequencySumBelow(mid) > value)
+				end = mid;
+			else
+				start = mid;
+		}
+		assert start + 1 == end;
+		int sym = start;
+		assert offset >= table.frequencySumBelow(sym) * range / total;
+		assert offset < table.frequencySumBelow(sym+1) * range / total;
+		update(sym, table);
+		assert code >= low && code <= high;
+		return sym;
 	}
 
 	void compress(int symbol, FrequencyTable table, BitOutput output) throws IOException {
 		decompress = false;
 		this.output = output;
 		update(symbol, table);
-//		for(int i = 0; i < 8; i++) {
-//			output.writeBit((symbol >>> i) & 1);
-//		}
+		table.add(symbol, 1);
 	}
+
 	int decompress(BitInput input, FrequencyTable table) throws IOException {
 		decompress = true;
 		this.input = input;
 		if(!init) {
-			for(int i = 0; i < NUM_BITS; i++)
-				code = (code << 1) | codeBitOrZero();
 			init = true;
+			for(int i = 0; i < ST_BITS; i++)
+				code = (code << 1) | get();
 		}
-		return read(table);
-//		int symbol = 0;
-//		for(int i = 0; i < 8; i++) {
-//			symbol = (symbol << 1) | codeBitOrZero();
-//		}
-//		return symbol;
+		int symbol = decode(table);
+		table.add(symbol, 1);
+		return symbol;
 	}
 }
 
@@ -258,12 +259,7 @@ class FrequencyTable {
 			sum += tree[symbol - 1];
 		return sum;
 	}
-	int firstSymbolAbove(int sum) {
-		int symbol = 0;
-		while(symbol < tree.length && frequencySumBelow(symbol) < sum)
-			symbol++;
-		return symbol;
-	}
+
 	int firstSymbolBelow(int sum){
 		int i = 0, j = tree.length;
 		while(j != Integer.lowestOneBit(j))

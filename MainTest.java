@@ -14,7 +14,7 @@ public class MainTest {
 			b.writeBit(1);
 			b.writeBit(1);
 		}
-		assertArrayEquals(new byte[]{0b111}, stream.toByteArray());
+		assertArrayEquals(new byte[]{(byte)0b11100000}, stream.toByteArray());
 		stream.reset();
 
 		try(BitOutput b = new BitOutput(stream)) {
@@ -55,27 +55,45 @@ public class MainTest {
 		}
 	}
 
-	@Test
-	public void testArithmeticCoder() throws IOException {
+	private void testArithmeticCoderWith(int symbols, byte[] data) throws IOException {
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		try(BitOutput bitOut = new BitOutput(out)) {
 			ArithmeticCoder enc = new ArithmeticCoder();
-			FrequencyTable freq1 = new FrequencyTable(7);
+			FrequencyTable freq1 = new FrequencyTable(symbols);
 			freq1.setAll(1);
-			enc.compress(3, freq1, bitOut);
-			enc.compress(4, freq1, bitOut);
-			enc.compress(4, freq1, bitOut);
-			enc.compress(5, freq1, bitOut);
+			for(byte b : data) {
+				enc.compress(b & 0xFF, freq1, bitOut);
+			}
+			enc.compress(0, freq1, bitOut);
 			enc.finish();
 		}
-		FrequencyTable freq2 = new FrequencyTable(7);
+		FrequencyTable freq2 = new FrequencyTable(symbols);
 		freq2.setAll(1);
 		ArithmeticCoder dec = new ArithmeticCoder();
 		BitInput bitIn = new BitInput(new ByteArrayInputStream(out.toByteArray()));
-		assertEquals(3, dec.decompress(bitIn, freq2));
-		assertEquals(4, dec.decompress(bitIn, freq2));
-		assertEquals(4, dec.decompress(bitIn, freq2));
-		assertEquals(5, dec.decompress(bitIn, freq2));
+		for(byte b : data) {
+			assertEquals(b & 0xFF, dec.decompress(bitIn, freq2));
+		}
+	}
+
+	@Test
+	public void testArithmeticCoder70() throws IOException {
+		testArithmeticCoderWith(70, new byte[]{0, 33, 44, 44, 55});
+	}
+
+	@Test
+	public void testArithmeticCoder7() throws IOException {
+		testArithmeticCoderWith(7, new byte[]{0, 3, 4, 4, 5, 1, 6, 1, 1});
+	}
+
+	@Test
+	public void testArithmeticCoderLoremIpsum() throws IOException {
+		testArithmeticCoderWith(256, Files.readAllBytes(Paths.get("test/lorem-ipsum-7k")));
+	}
+
+	@Test
+	public void testArithmeticCoderRandom() throws IOException {
+		testArithmeticCoderWith(256, Files.readAllBytes(Paths.get("test/dev-random-1k")));
 	}
 
 	@Test
@@ -204,11 +222,11 @@ public class MainTest {
 
 	@Test
 	public void testIntegrationRandom() throws IOException {
-//		testWith(Files.readAllBytes(Paths.get("test/dev-random-1k")));
+		testWith(Files.readAllBytes(Paths.get("test/dev-random-1k")));
 	}
 
 	@Test
 	public void testIntegrationLoremIpsum() throws IOException {
-//		testWith(Files.readAllBytes(Paths.get("test/lorem-ipsum-7k")));
+		testWith(Files.readAllBytes(Paths.get("test/lorem-ipsum-7k")));
 	}
 }
