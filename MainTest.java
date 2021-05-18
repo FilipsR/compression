@@ -229,4 +229,24 @@ public class MainTest {
 	public void testIntegrationLoremIpsum() throws IOException {
 		testWith(Files.readAllBytes(Paths.get("test/lorem-ipsum-7k")));
 	}
+
+	@Test
+	public void testIntegrationFile1() throws IOException {
+		testWith(Files.readAllBytes(Paths.get("test/File1.html")));
+	}
+
+	@Test
+	public void testIntegrationFile2() throws IOException {
+		testWith(Files.readAllBytes(Paths.get("test/File2.html")));
+	}
+
+	@Test
+	public void testIntegrationFile3() throws IOException {
+		testWith(Files.readAllBytes(Paths.get("test/File3.html")));
+	}
+
+	@Test
+	public void testIntegrationFile4() throws IOException {
+		testWith(Files.readAllBytes(Paths.get("test/File4.html")));
+	}
 }

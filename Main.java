@@ -359,7 +359,7 @@ class LZ77 {
 
 	private final FrequencyTable chars = new FrequencyTable(256 + 2);
 	private final FrequencyTable lengths = new FrequencyTable(MAX_LENGTH + 1);
-	private final FrequencyTable distances = new FrequencyTable(WINDOW_SIZE + 1);
+	private final FrequencyTable distances = new FrequencyTable(WINDOW_SIZE + MAX_LENGTH);
 	private final ArithmeticCoder arithmetic = new ArithmeticCoder();
 	{
 		chars.setAll(1);
@@ -414,8 +414,8 @@ class LZ77 {
 				char c = inputBuffer.charAt(0);
 				debugCharAction.accept(c);
 				arithmetic.compress(c, chars, output);
-				trimWindow();
 				window.append(c);
+				trimWindow();
 				inputBuffer.delete(0, 1);
 			} else {
 				arithmetic.compress(MATCH, chars, output);
@@ -423,8 +423,8 @@ class LZ77 {
 				arithmetic.compress(match.length(), lengths, output);
 				debugMatchAction.accept(match);
 				int len = match.length();
-				trimWindow();
 				window.append(inputBuffer, 0, len);
+				trimWindow();
 				inputBuffer.delete(0, len);
 			}
 		}
@@ -460,7 +460,7 @@ class Match {
 	private final int length;
 	Match(int d, int l) {
 		assert d > 0 && l > 0;
-		assert d < LZ77.WINDOW_SIZE && l < LZ77.MAX_LENGTH;
+//		assert d < LZ77.WINDOW_SIZE && l < LZ77.MAX_LENGTH;
 		distance = d;
 		length = l;
 	}
