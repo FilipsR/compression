@@ -256,17 +256,7 @@ class ArithmeticCoder {
 		long value = ((offset + 1) * total - 1) / range;
 		assert value * range / total <= offset;
 		assert value >= 0 && value < total;
-		int start = 0;
-		int end = table.numberOfSymbols();
-		while(end - start > 1) {
-			int mid = (start + end) / 2;
-			if(table.frequencySumBelow(mid) > value)
-				end = mid;
-			else
-				start = mid;
-		}
-		assert start + 1 == end;
-		int sym = start;
+		int sym = table.firstSymbolBelow((int)value);
 		assert offset >= table.frequencySumBelow(sym) * range / total;
 		assert offset < table.frequencySumBelow(sym+1) * range / total;
 		update(sym, table);
@@ -382,7 +372,10 @@ class LZ77 {
 	private Match longestPrefixInWindow() {
 		int bestStart = -1;
 		int bestLength = -1;
-		for(int start = window.length() - MIN_LENGTH; start >= 0; start--) {
+		if(inputBuffer.length() < MIN_LENGTH)
+			return null;
+		String initial = inputBuffer.substring(0, MIN_LENGTH);
+		for(int start = window.lastIndexOf(initial); start >= 0; start = window.lastIndexOf(initial, start - 1)) {
 			int mismatch = 0;
 			int limit = Math.min(window.length() - start, inputBuffer.length());
 			while(mismatch < limit && window.charAt(start + mismatch) == inputBuffer.charAt(mismatch))
