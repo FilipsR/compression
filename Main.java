@@ -8,11 +8,15 @@ import java.nio.file.*;
 public class Main {
 	private static Scanner scanner = new Scanner(System.in);
 	public static void main(String[] args) throws Exception {
-		System.out.println("function: ");
-
 		loop:
-		while (scanner.hasNextLine()) {
-			switch(scanner.nextLine()) {
+		while (true) {
+			System.out.print("command: ");
+			final String command;
+			if(scanner.hasNextLine())
+				command = scanner.nextLine();
+			else
+				break;
+			switch(command) {
 				case "comp":
 					comp();
 					break;
@@ -31,7 +35,7 @@ public class Main {
 				case "exit":
 					break loop;
 				default:
-					System.out.println("no match");
+					System.out.println("wrong command");
 			}
 		}
 		scanner.close();
