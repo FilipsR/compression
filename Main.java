@@ -388,8 +388,7 @@ class LZ77 {
 				bestStart = start;
 			}
 		}
-		return null;
-//		return bestStart >= 0 ? new Match(window.length() - bestStart, bestLength) : null;
+		return bestStart >= 0 ? new Match(window.length() - bestStart, bestLength) : null;
 	}
 
 	private void trimWindow() {
@@ -433,8 +432,11 @@ class LZ77 {
 		arithmetic.finish();
 	}
 	private void paste(int distance, int length, OutputStream output) throws IOException {
-		for(int i = window.length() - distance, end = window.length() - distance + length; i < end; i++)
+		int start = window.length() - distance;
+		int end = start + length;
+		for(int i = start; i < end; i++)
 			output.write(window.charAt(i));
+		window.append(window, start, end);
 	}
 
 	void decompress(BitInput input, OutputStream output) throws IOException {
