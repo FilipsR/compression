@@ -93,11 +93,10 @@ public class Main {
 		}
 	}
 	public static void equal() throws Exception{
-		Scanner sc = new Scanner(System.in);
 		System.out.println("first file name: ");
-		Path path1 = Paths.get(sc.nextLine());
+		Path path1 = Paths.get(scanner.nextLine());
 		System.out.println("second file name: ");
-		Path path2 = Paths.get(sc.nextLine());
+		Path path2 = Paths.get(scanner.nextLine());
 
 		byte[] f1 = Files.readAllBytes(path1);
 		byte[] f2 = Files.readAllBytes(path2);
